@@ -1,0 +1,14 @@
+funcy
+jupyterlab
+matplotlib
+numpy
+pandas
+Pillow
+PyYAML
+sacred
+scikit-learn
+scikit-image
+seaborn
+tensorboardX
+tqdm
+ujson
