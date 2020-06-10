@@ -16,7 +16,7 @@ from torchvision import transforms
 from tqdm import tqdm
 
 from models import load_model
-from datasets import ISICDataset
+from dataset import ISICDataset
 
 TRAIN = "train"
 VALIDATION = "validation"
@@ -25,7 +25,7 @@ TEST = "test"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 ex = Experiment()
-fs_observer = FileStorageObserver.create(os.path.join(BASE_PATH, "results"))
+fs_observer = FileStorageObserver.create(os.path.join(BASE_DIR, "results"))
 ex.observers.append(fs_observer)
 
 def set_seeds(worker_id):
@@ -114,7 +114,7 @@ def run_test(model, dataloader, criterion, device):
 def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, patience, input_size,
          datapath, train_fpath, valid_fpath, test_fpath):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    writer = SummaryWriter(os.path.join(BASE_PATH, "runs", "experiment-{}".format(_run._id)))
+    writer = SummaryWriter(os.path.join(BASE_DIR, "runs", "experiment-{}".format(_run._id)))
     best_model_path = os.path.join(fs_observer.dir, "best_model.pth")
     last_model_path = os.path.join(fs_observer.dir, "last_model.pth")
 
@@ -133,8 +133,8 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
 
     model = load_model(architecture, 2)
     model = model.to(device)
-    optimizer = Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-    scheduler = CyclicLR(optimizer, base_lr=lr, max_lr=10 * lr, cycle_momentum=False)
+    optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    scheduler = CyclicLR(optimizer, base_lr=learning_rate, max_lr=10 * learning_rate, cycle_momentum=False)
     loss_fn = nn.CrossEntropyLoss()
 
     info = {}

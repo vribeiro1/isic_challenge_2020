@@ -38,8 +38,6 @@ class ISICDataset(Dataset):
 
     def load_image(self, fpath):
         img = Image.open(fpath).convert("RGB")
-        if self.erase_text:
-            img = erase_text_from_image(img)
         return img
 
     def __getitem__(self, item):
