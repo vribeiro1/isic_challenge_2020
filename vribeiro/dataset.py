@@ -46,7 +46,7 @@ class ISICDataset(Dataset):
         dataitem = self.df_labels.iloc[item]
 
         image_name = dataitem["image_name"]
-        filepath = os.path.join(self.datapath, dataitem["filepath"])
+        filepath = os.path.join(self.datapath, image_name + ".jpg")
 
         if "target" in self.df_labels.columns:
             target_val = dataitem["target"]
