@@ -124,7 +124,7 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
         transforms.RandomRotation((0, 180))
     ])
 
-    train_valid_datadir = os.path.join(datapath, "train")
+    train_valid_datadir = os.path.join(datapath, "train_512")
     train_dataset = ISICDataset(train_valid_datadir, train_fpath, train_transform, size=input_size)
     valid_dataset = ISICDataset(train_valid_datadir, valid_fpath, size=input_size)
 
@@ -159,7 +159,7 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
             break
 
     if test_labels_fpath is not None:
-        test_datadir = os.path.join(datapath, "test")
+        test_datadir = os.path.join(datapath, "test_512")
         test_dataset = ISICDataset(test_datadir, test_labels_fpath, size=input_size)
         test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0, worker_init_fn=set_seeds)
 
