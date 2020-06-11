@@ -73,19 +73,24 @@ def run_epoch(phase, epoch, model, dataloader, optimizer, criterion, scheduler=N
             all_targets.append(targets.detach().cpu().numpy())
             all_outputs.append(outputs.detach().cpu().numpy())
 
+            try:
+                auc = roc_auc_score(np.concatenate(all_targets), np.concatenate(all_outputs)[:, 1])
+            except:
+                auc = np.nan
+
             losses.append(loss.item())
-            progress_bar.set_postfix(loss=np.mean(losses))
+            progress_bar.set_postfix(loss=np.mean(losses), auc=auc)
 
     mean_loss = np.mean(losses)
     writer.add_scalar("{}.loss".format(phase), mean_loss, epoch)
 
     all_targets = np.concatenate(all_targets)
     all_outputs = np.concatenate(all_outputs)[:, 1]
-    avg_auc = roc_auc_score(all_targets, all_outputs)
-    writer.add_scalar("{}.avg_auc".format(phase), avg_auc, epoch)
+    auc = roc_auc_score(all_targets, all_outputs)
+    writer.add_scalar("{}.auc".format(phase), auc, epoch)
 
     return {"loss": mean_loss,
-            "auc": avg_auc}
+            "auc": auc}
 
 
 def run_test(model, dataloader, criterion, device):
