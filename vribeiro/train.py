@@ -80,8 +80,8 @@ def run_epoch(phase, epoch, model, dataloader, optimizer, criterion, scheduler=N
     writer.add_scalar("{}.loss".format(phase), mean_loss, epoch)
 
     all_targets = np.concatenate(all_targets)
-    all_outputs = np.concatenate(all_outputs)
-    avg_auc = roc_auc_score(all_targets, all_outputs, multi_class="ovr")
+    all_outputs = np.concatenate(all_outputs)[:, 1]
+    avg_auc = roc_auc_score(all_targets, all_outputs)
     writer.add_scalar("{}.avg_auc".format(phase), avg_auc, epoch)
 
     return {"loss": mean_loss,
