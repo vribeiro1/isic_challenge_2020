@@ -133,9 +133,7 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
     train_dataset = ISICDataset(train_valid_datadir, train_fpath, train_transform, size=input_size)
     valid_dataset = ISICDataset(train_valid_datadir, valid_fpath, size=input_size)
 
-    class_counts = [98, 2]
-    weights = 1 / torch.float(class_counts)
-    sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, batch_size)
+    sampler = torch.utils.data.sampler.WeightedRandomSampler(train_dataset.class_weights, batch_size)
 
     train_dataloader = DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, worker_init_fn=set_seeds, sampler=sampler

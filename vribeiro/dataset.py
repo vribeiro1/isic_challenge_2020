@@ -14,6 +14,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 class ISICDataset(Dataset):
     IMG_EXT = ("png", "jpg", "jpeg", "gif")
 
+    P_MELANOMA = 0.02
+    P_BENIGN = 0.98
+    PROBS = {
+        0.0: P_BENIGN,
+        1.0: P_MELANOMA
+    }
+
     def __init__(self, datapath, df_labels, transform=None, size=(224, 224)):
         self.datapath = datapath
 
@@ -39,6 +46,15 @@ class ISICDataset(Dataset):
     def load_image(self, fpath):
         img = Image.open(fpath).convert("RGB")
         return img
+
+    @property
+    def class_weights(self):
+        weights = torch.tensor(
+            [1. / self.PROBS[c] for c in self.df_labels.target],
+            dtype=torch.float
+        )
+
+        return weights
 
     def __getitem__(self, item):
         dataitem = self.df_labels.iloc[item]
