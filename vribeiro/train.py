@@ -9,7 +9,7 @@ from sacred import Experiment
 from sacred.observers import FileStorageObserver
 from sklearn.metrics import roc_auc_score
 from torch.optim.lr_scheduler import CyclicLR
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler
 from tensorboardX import SummaryWriter
 from torch.optim import Adam
 from torchvision import transforms
@@ -133,8 +133,16 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
     train_dataset = ISICDataset(train_valid_datadir, train_fpath, train_transform, size=input_size)
     valid_dataset = ISICDataset(train_valid_datadir, valid_fpath, size=input_size)
 
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, worker_init_fn=set_seeds)
-    valid_dataloader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=False, num_workers=0, worker_init_fn=set_seeds)
+    class_counts = [98, 2]
+    weights = 1 / torch.float(class_counts)
+    sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, batch_size)
+
+    train_dataloader = DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, worker_init_fn=set_seeds, sampler=sampler
+    )
+    valid_dataloader = DataLoader(
+        valid_dataset, batch_size=batch_size, shuffle=False, num_workers=0, worker_init_fn=set_seeds
+    )
 
     model = load_model(architecture, 2)
     model = model.to(device)
@@ -166,7 +174,9 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
     if test_labels_fpath is not None:
         test_datadir = os.path.join(datapath, "test_512")
         test_dataset = ISICDataset(test_datadir, test_labels_fpath, size=input_size)
-        test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0, worker_init_fn=set_seeds)
+        test_dataloader = DataLoader(
+            test_dataset, batch_size=batch_size, shuffle=False, num_workers=0, worker_init_fn=set_seeds
+        )
 
         best_model_state_dict = torch.load(best_model_path, map_location=device)
         best_model = load_model(architecture, len(test_dataset.CLASSES), best_model_state_dict).to(device)
