@@ -136,7 +136,7 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
     sampler = torch.utils.data.sampler.WeightedRandomSampler(train_dataset.class_weights, batch_size)
 
     train_dataloader = DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, worker_init_fn=set_seeds, sampler=sampler
+        train_dataset, batch_size=batch_size, shuffle=False, num_workers=0, worker_init_fn=set_seeds, sampler=sampler
     )
     valid_dataloader = DataLoader(
         valid_dataset, batch_size=batch_size, shuffle=False, num_workers=0, worker_init_fn=set_seeds
