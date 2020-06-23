@@ -1,4 +1,4 @@
-architecture: densenet201
+architecture: efficientnetb0
 n_epochs: 300
 patience: 20
 learning_rate: 0.0001

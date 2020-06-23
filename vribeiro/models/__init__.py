@@ -1,5 +1,6 @@
 import torch.nn as nn
 
+from efficientnet_pytorch import EfficientNet
 from torchvision.models import alexnet, densenet201, resnet101
 
 
@@ -20,6 +21,12 @@ class ModelLoaders:
     def load_resnet101(cls, num_classes):
         model = resnet101(pretrained=True)
         model.fc = nn.Linear(model.fc.in_features, num_classes)
+        return model
+
+    @classmethod
+    def load_efficientnetb0(cls, num_classes):
+        model = EfficientNet.from_pretrained("efficientnet-b0")
+        model._fc = nn.Linear(model._fc.in_features, num_classes)
         return model
 
 
