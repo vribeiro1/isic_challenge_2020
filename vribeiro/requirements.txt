@@ -2,7 +2,6 @@ efficientnet_pytorch
 funcy
 jupyterlab
 kornia
-matplotlib
 numpy
 pandas
 Pillow
@@ -10,7 +9,6 @@ PyYAML
 sacred
 scikit-learn
 scikit-image
-seaborn
 tensorboardX
 tqdm
 ujson
