@@ -20,11 +20,20 @@ from tqdm import tqdm
 from models import load_model
 from dataset import ISICDataset
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+if os.path.isdir(os.path.join(BASE_DIR, "FastAutoAugment")):
+    from FastAutoAugment.data import Augmentation
+    from FastAutoAugment.archive import fa_resnet50_rimagenet
+else:
+    raise ImportError(
+        "FastAutoAugment is not available. Download the code from https://github.com/kakaobrain/fast-autoaugment"
+        "and move FastAutoAugment to this directory."
+    )
+
 TRAIN = "train"
 VALIDATION = "validation"
 TEST = "test"
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 ex = Experiment()
 fs_observer = FileStorageObserver.create(os.path.join(BASE_DIR, "results"))
@@ -129,6 +138,8 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
     writer = SummaryWriter(os.path.join(BASE_DIR, "runs", "experiment-{}".format(_run._id)))
     best_model_path = os.path.join(fs_observer.dir, "best_model.pth")
     last_model_path = os.path.join(fs_observer.dir, "last_model.pth")
+
+    train_transform = Augmentation(fa_resnet50_rimagenet())
 
     train_transform = transforms.Compose([
         transforms.RandomHorizontalFlip(p=0.5),
