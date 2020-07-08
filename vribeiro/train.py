@@ -1,3 +1,4 @@
+import funcy
 import numpy as np
 import os
 import pandas as pd
@@ -93,7 +94,7 @@ def run_epoch(phase, epoch, model, dataloader, optimizer, criterion, scheduler=N
             "auc": auc}
 
 
-def run_test(model, dataloader, criterion, device):
+def run_test(model, dataloader, criterion, device, threshold=None):
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -107,10 +108,15 @@ def run_test(model, dataloader, criterion, device):
     for i, (image_names, inputs, _) in enumerate(progress_bar):
         inputs = inputs.to(device)
         with torch.set_grad_enabled(False):
-            outputs = model(inputs)
+            net_outputs = model(inputs)
 
-            outputs = torch.softmax(outputs, dim=1)
-            predictions.extend(zip(list(image_names), list(outputs)))
+            net_outputs = torch.softmax(outputs, dim=1)
+            cls_outputs = funcy.lmap(lambda t: t.item(), net_outputs[:, 1])
+
+            if threshold is not None:
+                cls_outputs = [int(out > threshold) for out in cls_outputs]
+
+            predictions.extend(zip(list(image_names), list(cls_outputs)))
 
     return predictions
 
@@ -180,12 +186,9 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
 
         best_model_state_dict = torch.load(best_model_path, map_location=device)
         best_model = load_model(architecture, len(test_dataset.CLASSES), best_model_state_dict).to(device)
-        best_model = model
-        predictions = run_test(best_model, test_dataloader, loss_fn, device)
+        predictions = run_test(best_model, test_dataloader, loss_fn, device, threshold=0.5)
 
-        data = [[id_] + [p.item() for p in preds] for id_, preds in predictions]
-        columns = ["image_name", "_", "target"]
-        df = pd.DataFrame(data, columns=columns)["image_name", "target"]
-        df.to_csv(os.path.join(fs_observer.dir, "test_predictions.csv"), index=False)
+        df = pd.DataFrame(predictions, columns=["image_name", "target"])
+        df.to_csv(os.path.join(fs_observer.dir, "submission.csv"), index=False)
 
         print("Finished running test")
