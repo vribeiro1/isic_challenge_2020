@@ -158,7 +158,7 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
     optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     scheduler = CyclicLR(optimizer, base_lr=learning_rate, max_lr=10 * learning_rate, cycle_momentum=False)
     # loss_fn = nn.CrossEntropyLoss()
-    loss_fn = FocalLoss(alpha=0.5)
+    loss_fn = FocalLoss(alpha=0.5, reduction="sum")
 
     info = {}
     epochs = range(1, n_epochs + 1)
