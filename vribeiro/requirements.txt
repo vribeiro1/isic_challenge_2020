@@ -1,6 +1,7 @@
 efficientnet_pytorch
 funcy
 jupyterlab
+kornia
 matplotlib
 numpy
 pandas

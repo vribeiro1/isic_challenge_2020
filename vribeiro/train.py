@@ -6,6 +6,7 @@ import random
 import torch
 import torch.nn as nn
 
+from kornia.losses import FocalLoss
 from sacred import Experiment
 from sacred.observers import FileStorageObserver
 from sklearn.metrics import roc_auc_score
@@ -156,7 +157,8 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
     model = model.to(device)
     optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     scheduler = CyclicLR(optimizer, base_lr=learning_rate, max_lr=10 * learning_rate, cycle_momentum=False)
-    loss_fn = nn.CrossEntropyLoss()
+    # loss_fn = nn.CrossEntropyLoss()
+    loss_fn = FocalLoss(alpha=0.5)
 
     info = {}
     epochs = range(1, n_epochs + 1)
