@@ -126,7 +126,9 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
     train_transform = transforms.Compose([
         transforms.RandomHorizontalFlip(p=0.5),
         transforms.RandomVerticalFlip(p=0.5),
-        transforms.RandomRotation((0, 180))
+        transforms.RandomRotation((0, 180)),
+        transforms.ColorJitter(brightness=0.05, contrast=0.05, saturation=0.05),
+        transforms.RandomAffine(translate=(0.05, 0.05), shear=10)
     ])
 
     train_valid_datadir = os.path.join(datapath, "train_512")
