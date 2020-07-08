@@ -139,19 +139,19 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
     best_model_path = os.path.join(fs_observer.dir, "best_model.pth")
     last_model_path = os.path.join(fs_observer.dir, "last_model.pth")
 
-    train_transform = Augmentation(fa_resnet50_rimagenet())
+    transform = Augmentation(fa_resnet50_rimagenet())
 
-    train_transform = transforms.Compose([
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomVerticalFlip(p=0.5),
-        transforms.RandomRotation((-45, 45)),
-        transforms.ColorJitter(brightness=0.05, contrast=0.05, saturation=0.05),
-        transforms.RandomAffine(degrees=5, translate=(0.05, 0.05), shear=10)
-    ])
+    # train_transform = transforms.Compose([
+    #     transforms.RandomHorizontalFlip(p=0.5),
+    #     transforms.RandomVerticalFlip(p=0.5),
+    #     transforms.RandomRotation((-45, 45)),
+    #     transforms.ColorJitter(brightness=0.05, contrast=0.05, saturation=0.05),
+    #     transforms.RandomAffine(degrees=5, translate=(0.05, 0.05), shear=10)
+    # ])
 
     train_valid_datadir = os.path.join(datapath, "train_512")
-    train_dataset = ISICDataset(train_valid_datadir, train_fpath, train_transform, size=input_size)
-    valid_dataset = ISICDataset(train_valid_datadir, valid_fpath, size=input_size)
+    train_dataset = ISICDataset(train_valid_datadir, train_fpath, transform, size=input_size)
+    valid_dataset = ISICDataset(train_valid_datadir, valid_fpath, transform, size=input_size)
 
     sampler = torch.utils.data.sampler.WeightedRandomSampler(
         train_dataset.class_weights, len(train_dataset.class_weights)
