@@ -26,7 +26,11 @@ class ISICDataset(Dataset):
 
         if isinstance(df_labels, str):
             df_labels = pd.read_csv(df_labels)
-        self.df_labels = df_labels[~pd.isna(df_labels["target"])]
+
+        if "target" in df_labels.columns:
+            self.df_labels = df_labels[~pd.isna(df_labels["target"])]
+        else:
+            self.df_labels = df_labels
 
         self.transform = transform
         self.resize = transforms.Resize(size)
@@ -65,7 +69,7 @@ class ISICDataset(Dataset):
         if "target" in self.df_labels.columns:
             target_val = dataitem["target"]
         else:
-            target_val = None
+            target_val = np.nan
 
         img = self.load_image(filepath)
         img_resize = self.resize(img)
