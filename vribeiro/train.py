@@ -18,7 +18,7 @@ from torchvision import transforms
 from tqdm import tqdm
 
 from models import load_model
-from dataset import ISICDataset
+from dataset import ISICDataset, ExternalInputIterator, ExternalSourcePipeline
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -63,7 +63,11 @@ def run_epoch(phase, epoch, model, dataloader, optimizer, criterion, scheduler=N
     all_targets = []
     all_outputs = []
     losses = []
-    for i, (_, inputs, targets) in enumerate(progress_bar):
+    for i, it in enumerate(progress_bar):
+        batch_data = it[0]
+        inputs = batch_data["inputs"]
+        targets = batch_data["targets"]
+
         inputs = inputs.to(device)
         targets = targets.to(device)
 
@@ -115,7 +119,10 @@ def run_test(model, dataloader, criterion, device, threshold=None):
     model.eval()
 
     predictions = []
-    for i, (image_names, inputs, _) in enumerate(progress_bar):
+    for i, it in enumerate(progress_bar):
+        batch_data = it[0]
+        inputs = batch_data["inputs"]
+
         inputs = inputs.to(device)
         with torch.set_grad_enabled(False):
             net_outputs = model(inputs)
@@ -126,7 +133,7 @@ def run_test(model, dataloader, criterion, device, threshold=None):
             if threshold is not None:
                 cls_outputs = [int(out > threshold) for out in cls_outputs]
 
-            predictions.extend(zip(list(image_names), list(cls_outputs)))
+            predictions.extend(list(cls_outputs))
 
     return predictions
 
@@ -139,30 +146,40 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
     best_model_path = os.path.join(fs_observer.dir, "best_model.pth")
     last_model_path = os.path.join(fs_observer.dir, "last_model.pth")
 
-    transform = Augmentation(fa_resnet50_rimagenet())
+    # transform = Augmentation(fa_resnet50_rimagenet())
 
-    # train_transform = transforms.Compose([
-    #     transforms.RandomHorizontalFlip(p=0.5),
-    #     transforms.RandomVerticalFlip(p=0.5),
-    #     transforms.RandomRotation((-45, 45)),
-    #     transforms.ColorJitter(brightness=0.05, contrast=0.05, saturation=0.05),
-    #     transforms.RandomAffine(degrees=5, translate=(0.05, 0.05), shear=10)
-    # ])
+    transform = transforms.Compose([
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomVerticalFlip(p=0.5),
+        transforms.RandomRotation((-45, 45)),
+        transforms.ColorJitter(brightness=0.05, contrast=0.05, saturation=0.05),
+        transforms.RandomAffine(degrees=5, translate=(0.05, 0.05), shear=10)
+    ])
 
     train_valid_datadir = os.path.join(datapath, "train_512")
-    train_dataset = ISICDataset(train_valid_datadir, train_fpath, transform, size=input_size)
-    valid_dataset = ISICDataset(train_valid_datadir, valid_fpath, transform, size=input_size)
 
-    sampler = torch.utils.data.sampler.WeightedRandomSampler(
-        train_dataset.class_weights, len(train_dataset.class_weights)
-    )
+    device_id = int(os.environ("CUDA_VISIBLE_DEVICES"))
+    train_eii = iter(ExternalInputIterator(root, train_fpath, batch_size))
+    train_pipe = ExternalSourcePipeline(data_iterator=train_eii, batch_size=batch_size, num_threads=2, device_id=device_id)
+    train_pipe.build()
 
-    train_dataloader = DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=False, num_workers=0, worker_init_fn=set_seeds, sampler=sampler
-    )
-    valid_dataloader = DataLoader(
-        valid_dataset, batch_size=batch_size, shuffle=False, num_workers=0, worker_init_fn=set_seeds
-    )
+    valid_eii = iter(ExternalInputIterator(root, valid_fpath, batch_size))
+    valid_pipe = ExternalSourcePipeline(data_iterator=valid_eii, batch_size=batch_size, num_threads=2, device_id=device_id)
+    valid_pipe.build()
+
+    # train_dataset = ISICDataset(train_valid_datadir, train_fpath, transform, size=input_size)
+    # valid_dataset = ISICDataset(train_valid_datadir, valid_fpath, transform, size=input_size)
+
+    # sampler = torch.utils.data.sampler.WeightedRandomSampler(
+    #     train_dataset.class_weights, len(train_dataset.class_weights)
+    # )
+
+    # train_dataloader = DataLoader(
+    #     train_dataset, batch_size=batch_size, shuffle=False, num_workers=0, worker_init_fn=set_seeds, sampler=sampler
+    # )
+    # valid_dataloader = DataLoader(
+    #     valid_dataset, batch_size=batch_size, shuffle=False, num_workers=0, worker_init_fn=set_seeds
+    # )
 
     model = load_model(architecture, 2)
     model = model.to(device)
@@ -177,8 +194,8 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
     epochs_since_best = 0
 
     for epoch in epochs:
-        info[TRAIN] = run_epoch(TRAIN, epoch, model, train_dataloader, optimizer, loss_fn, scheduler, writer)
-        info[VALIDATION] = run_epoch(VALIDATION, epoch, model, valid_dataloader, optimizer, loss_fn, scheduler, writer)
+        info[TRAIN] = run_epoch(TRAIN, epoch, model, train_pipe, optimizer, loss_fn, scheduler, writer)
+        info[VALIDATION] = run_epoch(VALIDATION, epoch, model, valid_pipe, optimizer, loss_fn, scheduler, writer)
 
         if info[VALIDATION]["auc"] > best_metric:
             best_metric = info[VALIDATION]["auc"]
@@ -194,14 +211,18 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
 
     if test_fpath is not None:
         test_datadir = os.path.join(datapath, "test_512")
-        test_dataset = ISICDataset(test_datadir, test_fpath, size=input_size)
-        test_dataloader = DataLoader(
-            test_dataset, batch_size=batch_size, shuffle=False, num_workers=0, worker_init_fn=set_seeds
-        )
+        test_eii = iter(ExternalInputIterator(root, test_fpath, batch_size))
+        test_pipe = ExternalSourcePipeline(data_iterator=test_eii, batch_size=batch_size, num_threads=2, device_id=device_id)
+        test_pipe.build()
+
+        # test_dataset = ISICDataset(test_datadir, test_fpath, transform, size=input_size)
+        # test_dataloader = DataLoader(
+        #     test_dataset, batch_size=batch_size, shuffle=False, num_workers=0, worker_init_fn=set_seeds
+        # )
 
         best_model_state_dict = torch.load(best_model_path, map_location=device)
         best_model = load_model(architecture, 2, best_model_state_dict).to(device)
-        predictions = run_test(best_model, test_dataloader, loss_fn, device, threshold=0.5)
+        predictions = run_test(best_model, test_pipe, loss_fn, device, threshold=0.5)
 
         df = pd.DataFrame(predictions, columns=["image_name", "target"])
         df.to_csv(os.path.join(fs_observer.dir, "submission.csv"), index=False)
