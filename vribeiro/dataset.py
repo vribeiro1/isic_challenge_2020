@@ -129,13 +129,13 @@ class ExternalInputIterator:
 
 
 class ExternalSourcePipeline(Pipeline):
-    def __init__(self, data_iterator, batch_size, num_threads, size=(224, 224), device_id):
+    def __init__(self, data_iterator, batch_size, num_threads, device_id, size=(224, 224)):
         super(ExternalSourcePipeline, self).__init__(batch_size, num_threads, device_id, seed=12)
 
         self.data_iterator = data_iterator
         self.input = ops.ExternalSource()
         self.target = ops.ExternalSource()
-        self.decode = ops.nvJPEGDecoder(device="mixed", output_type=types.RGB)
+        self.decode = ops.ImageDecoder(device="mixed", output_type=types.RGB)
 
         resize_x, resize_y = size
         self.res = ops.Resize(device="cuda", resize_x=resize_x, resize_y=resize_y, interp_type=types.INTERP_TRIANGULAR)

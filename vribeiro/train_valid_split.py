@@ -22,7 +22,7 @@ for i, (train, valid) in enumerate(skf.split(df, df.target)):
 
     neg = train_counts[0]
     pos = train_counts[1]
-    print(f"train: {pos / (pos + neg)}")
+    print(f"train: {pos / (pos + neg)} ({pos}/{(pos + neg)})")
 
     df_train.to_csv(os.path.join(fold_dir, f"train.csv"), index=False)
 
@@ -31,7 +31,7 @@ for i, (train, valid) in enumerate(skf.split(df, df.target)):
 
     neg = valid_counts[0]
     pos = valid_counts[1]
-    print(f"valid: {pos / (pos + neg)}")
+    print(f"valid: {pos / (pos + neg)} ({pos}/{pos + neg})")
 
     df_valid.to_csv(os.path.join(fold_dir, f"valid.csv"), index=False)
 
