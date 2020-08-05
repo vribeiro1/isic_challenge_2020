@@ -111,12 +111,11 @@ class ExternalInputIterator:
 
             filename = row["image_name"]
             filepath = os.path.join(self.root, filename + ".jpg")
-            with open(filepath, "rb") as f:
-                img_arr = np.frombuffer(f.read(), dtype=np.uint8)
+            img_arr = np.array(Image.open(filepath).convert("RGB"))
             inputs.append(img_arr)
 
-            if "target" in self.df_labels.columns:
-                target_val = dataitem["target"]
+            if "target" in self.df.columns:
+                target_val = row["target"]
             else:
                 target_val = np.nan
             targets.append(target_val)
