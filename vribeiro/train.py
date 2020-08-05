@@ -160,11 +160,11 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
 
     train_valid_datadir = os.path.join(datapath, "train_512")
 
-    train_eii = iter(ExternalInputIterator(datapath, train_fpath, batch_size))
+    train_eii = iter(ExternalInputIterator(train_valid_datadir, train_fpath, batch_size))
     train_pipe = ExternalSourcePipeline(data_iterator=train_eii, batch_size=batch_size, num_threads=2)
     train_pipe.build()
 
-    valid_eii = iter(ExternalInputIterator(datapath, valid_fpath, batch_size))
+    valid_eii = iter(ExternalInputIterator(train_valid_datadir, valid_fpath, batch_size))
     valid_pipe = ExternalSourcePipeline(data_iterator=valid_eii, batch_size=batch_size, num_threads=2)
     valid_pipe.build()
 
@@ -212,7 +212,7 @@ def main(_run, architecture, batch_size, n_epochs, learning_rate, weight_decay, 
 
     if test_fpath is not None:
         test_datadir = os.path.join(datapath, "test_512")
-        test_eii = iter(ExternalInputIterator(datapath, test_fpath, batch_size))
+        test_eii = iter(ExternalInputIterator(test_datadir, test_fpath, batch_size))
         test_pipe = ExternalSourcePipeline(data_iterator=test_eii, batch_size=batch_size, num_threads=2)
         test_pipe.build()
 
