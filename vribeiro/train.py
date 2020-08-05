@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 
 from kornia.losses import FocalLoss
+from nvidia.dali.plugin.pytorch import DALIGenericIterator
 from sacred import Experiment
 from sacred.observers import FileStorageObserver
 from sklearn.metrics import roc_auc_score
@@ -45,7 +46,7 @@ def set_seeds(worker_id):
     random.seed(seed + 2)
 
 
-def run_epoch(phase, epoch, model, dataloader, optimizer, criterion, scheduler=None, writer=None, device=None):
+def run_epoch(phase, epoch, model, pipe, optimizer, criterion, scheduler=None, writer=None, device=None):
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -53,7 +54,8 @@ def run_epoch(phase, epoch, model, dataloader, optimizer, criterion, scheduler=N
         device = torch.device(device)
 
     training = phase == TRAIN
-    progress_bar = tqdm(dataloader, desc="Epoch {} - {}".format(epoch, phase))
+    dali_iter = DALIGenericIterator([pipe], ["inputs", "targets"])
+    progress_bar = tqdm(dali_iter, desc="Epoch {} - {}".format(epoch, phase))
 
     if training:
         model.train()
